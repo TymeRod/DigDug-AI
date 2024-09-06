@@ -1,9 +1,9 @@
-# ia-digdug
-DigDug clone for AI teaching
+# digdug
+Trying some things with reinforcement learning
 
 ## How to install
 
-Make sure you are running Python 3.11.
+Make sure you are running Python 3.10.
 
 `$ pip install -r requirements.txt`
 
@@ -33,6 +33,5 @@ Make sure pygame is properly installed:
 
 python -m pygame.examples.aliens
 
-# Tested on:
-- MacOS 13.6
+
 
