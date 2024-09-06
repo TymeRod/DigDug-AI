@@ -1,0 +1,12 @@
+pillow
+requests
+pygame
+aiohttp
+async-timeout
+websockets
+yarl
+torch
+matplotlib
+numpy
+
+
