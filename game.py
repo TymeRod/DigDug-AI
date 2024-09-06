@@ -11,7 +11,7 @@ logger = logging.getLogger("Game")
 logger.setLevel(logging.DEBUG)
 
 INITIAL_SCORE = 0
-GAME_SPEED = 20
+GAME_SPEED = 100
 MAP_SIZE = (48, 24)
 
 

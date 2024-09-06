@@ -219,11 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", help="TCP port", type=int, default=8000)
     parser.add_argument("--seed", help="Seed number", type=int, default=0)
     parser.add_argument("--debug", help="Open Bitmap with map on gameover", action='store_true')
-    # parser.add_argument(
-    #     "--grading-server",
-    #     help="url of grading server",
-    #     default="http://tetriscores.av.it.pt/game",
-    # )
+
     args = parser.parse_args()
 
     async def main():
