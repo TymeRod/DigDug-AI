@@ -37,7 +37,7 @@ done
 if [ "$no_arg" = true ]; then
     gnome-terminal --tab --title="server" -- python3 server.py &
     gnome-terminal --tab --title="viewer" -- python3 viewer.py &
-    gnome-terminal --tab --title="main" -- python3 main.py  &
+    gnome-terminal --tab --title="main" -- python3 main.py  
     wait $!
 fi
 
@@ -47,7 +47,22 @@ if [ "$no_arg" = false ] && [ "$runs" != 1 ] && [ -z "$ports" ]; then
     gnome-terminal --tab --title="viewer" -- python3 viewer.py &
     for i in $(seq 1 $runs); do
         gnome-terminal --tab --title="main_run_$i" -- python3 main.py &
-        wait $!
+        sleep 1
+
+        while true; do
+            # Use xdotool to search for windows with the given title
+            window_id=$(xdotool search --name "main_run_$i")
+
+            # Check if a window with the specified title exists
+            if [ -n "$window_id" ]; then
+                continue
+            else
+                break
+            fi
+
+            # Sleep for a short period before checking again
+            sleep 1
+        done
     done
 fi
 
@@ -66,7 +81,7 @@ if [ -n "$ports" ]; then
     for i in $(seq 1 $runs); do
         counter=1
         for port in "${port_array[@]}"; do
-            gnome-terminal --tab --title="main_${counter}_run_$i" -- python3 main.py --port $port &
+            gnome-terminal --tab --title="main_${counter}_run_$i" -- python3 main.py --port $port 
             pids+=($!)
             counter=$((counter+1))
         done
