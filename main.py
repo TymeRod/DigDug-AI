@@ -18,11 +18,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 x_state = 48
 y_state = 24
 action_size = 5
-discount_rate = 0.99
+discount_rate = 0.9
 learning_rate = 5e-4
 eps_start = 1
 eps_end = 0.01
-eps_decay = 500
+eps_decay = 1000
 time_step_reward = -1
 dropout = 0.3
 r_scaling = 2
@@ -114,7 +114,9 @@ class Game:
         min_enemy = None
 
         for enemy in enemies:
-            distance = abs(digdug[0] - enemy[0]) + abs(digdug[1] - enemy[1])
+            a = torch.tensor((digdug[0] - enemy[0])**2, device=device, dtype=torch.float32)
+            b = torch.tensor((digdug[1] - enemy[1])**2, device=device, dtype=torch.float32)
+            distance = torch.sqrt(a + b)
             if distance < min_distance:
                 min_distance = distance
                 min_enemy = enemy
@@ -122,7 +124,7 @@ class Game:
         return min_distance, min_enemy
 
     def check_out_of_bounds(self, digdug, move):
-        return digdug[0] + move[0] < 0 or digdug[0] + move[0] > x_state or digdug[1] + move[1] < 0 or digdug[1] + move[1] > y_state
+        return digdug[0] + move[0] < 0 or digdug[0] + move[0] >= x_state or digdug[1] + move[1] < 0 or digdug[1] + move[1] >= y_state
 
     def calculate_reward(self, action):
         moves = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Up, Down, Left, Right
@@ -135,9 +137,9 @@ class Game:
             if self.check_out_of_bounds(self.digdug, move):
                 reward -= 1
 
-            #reward for using tunnels
-            if not self.check_out_of_bounds(self.digdug, move) and self.state[self.digdug[0] + move[0]][self.digdug[1] + move[1]] == 0:
-                reward += 0.2
+            # #reward for using tunnels
+            # if not self.check_out_of_bounds(self.digdug, move) and self.state[self.digdug[0] + move[0]][self.digdug[1] + move[1]] == 0:
+            #     reward += 1/abs(delta_dist) if delta_dist > 0 else 70
 
         # find the closest enemy
         dist_enemy, enemy = self.closest_enemy(self.digdug, self.enemies)
@@ -147,23 +149,22 @@ class Game:
 
         # reward for getting closer to the enemy
         if delta_dist > 0:
-            reward += 1
-        else:
+            reward += (1/delta_dist) * 2
+        elif delta_dist == 0:
             reward -= 1
+        else:
+            reward -= (1/abs(delta_dist)) * 2
 
         # reward for looking at the enemy while in range to attack
-        if self.dir == 0 and self.digdug[0] == enemy[0] and self.digdug[1] < enemy[1] and (self.digdug[1] + 1 == enemy[1] or self.digdug[1] + 2 == enemy[1]):
-            reward += 2
-        elif self.dir == 1 and self.digdug[1] == enemy[1] and self.digdug[0] < enemy[0] and (self.digdug[0] + 1 == enemy[0] or self.digdug[0] + 2 == enemy[0]):
-            reward += 2
-        elif self.dir == 2 and self.digdug[0] == enemy[0] and self.digdug[1] > enemy[1] and (self.digdug[1] - 1 == enemy[1] or self.digdug[1] - 2 == enemy[0]):
-            reward += 2
-        elif self.dir == 3 and self.digdug[1] == enemy[1] and self.digdug[0] > enemy[0] and (self.digdug[0] - 1 == enemy[0] or self.digdug[0] - 2 == enemy[0]):
-            reward += 2
+        if self.dir == 0 and self.digdug[0] == enemy[0] and self.digdug[1] < enemy[1] and self.digdug[1] + 1 == enemy[1]:
+            reward += 10
+        elif self.dir == 1 and self.digdug[1] == enemy[1] and self.digdug[0] < enemy[0] and self.digdug[0] + 1 == enemy[0]:
+            reward += 10
+        elif self.dir == 2 and self.digdug[0] == enemy[0] and self.digdug[1] > enemy[1] and self.digdug[1] - 1 == enemy[1]:
+            reward += 10
+        elif self.dir == 3 and self.digdug[1] == enemy[1] and self.digdug[0] > enemy[0] and self.digdug[0] - 1 == enemy[0]:
+            reward += 10
 
-        #punish for staying in the same place
-        if self.digdug == self.next_digdug:
-            reward -= 1
 
         #reward for hitting a enemy
         for rop in self.rope:
@@ -284,8 +285,8 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
                 key = game.get_key(action.item())
 
                 episode += 1
-                
-                print(f"Episode {episode}: Total Reward: {total_reward:.2f}, Epsilon: {epsilon_by_episode(episode):.2f}")
+                if episode % 100 == 1:
+                    print(f"Episode {episode}: Total Reward: {total_reward:.2f}, Epsilon: {epsilon_by_episode(episode):.2f}")
 
                 await websocket.send(
                     json.dumps({"cmd": "key", "key": key})
